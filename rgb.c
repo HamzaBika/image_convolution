@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Programme de traitement d'image
+ * 
+ * Ce programme permet de réaliser différentes opérations de traitement d'image:
+ * - Affichage et sauvegarde d'images
+ * - Extraction de composantes couleur (RGB)
+ * - Détection de contours (filtre de Sobel)
+ * - Application de flou gaussien
+ * 
+ * Format d'entrée: fichier texte contenant les dimensions et valeurs RGB
+ * Format de sortie: fichiers PNG
+ * 
+ * *********** Réalisé par: ***************
+
+ ******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -5,32 +20,28 @@
 #include "stb_image_write.h"
 #define M_PI 3.14159265358979323846
 
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// ***********************************      Q   U    1       *************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
 // Image struct
 typedef struct
 {
-    int r;        // resolution
-    int l;        // longueure
-    int h;        // hauteure
-    int **img[3]; // matrice r= 0 g = 1 b = 2
+    int r;        // Resolution
+    int l;        // Longueur (width)
+    int h;        // Hauteur (height)
+    int **img[3]; // Matrice : r = 0 (rouge), g = 1 (vert), b = 2 (bleu)
 } image;
+
 // Grey Image struct
 typedef struct
 {
-    int r;
-    int l;
-    int h;
-    int **img;
+    int r;        // Resolution
+    int l;        // Longueur (width)
+    int h;        // Hauteur (height)
+    int **img;    // Matrice de niveaux de gris
 } grey_image;
-// Creation de matrice d entier
+
+// Création de matrice d'entiers
 int **creationMatrice(int r, int h, int l)
 {
+    // Allocation de mémoire pour la matrice
     int **k = (int **)malloc(sizeof(int *) * r * h);
     for (int i = 0; i < r * h; i++)
     {
@@ -39,9 +50,10 @@ int **creationMatrice(int r, int h, int l)
     return k;
 }
 
-// Creation de matrice d entier
+// Création de matrice de doubles
 double **creationMatricedouble(int r, int h, int l)
 {
+    // Allocation de mémoire pour la matrice de doubles
     double **k = (double **)malloc(sizeof(double *) * r * h);
     for (int i = 0; i < r * h; i++)
     {
@@ -49,17 +61,11 @@ double **creationMatricedouble(int r, int h, int l)
     }
     return k;
 }
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// ***********************************      Q   U    2         *************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
 
-// Initialisation par des valeurs aleatoires
+// Initialisation par des valeurs aléatoires
 void initmatricerand(int **m, int r, int h, int l)
 {
+    // Génère des valeurs aléatoires entre 0 et 255
     for (int i = 0; i < r * h; i++)
     {
         for (int j = 0; j < r * l; j++)
@@ -69,10 +75,10 @@ void initmatricerand(int **m, int r, int h, int l)
     }
 }
 
-// Initialisation par  Saisie sur le clavier
-
+// Initialisation par saisie au clavier
 void initmatricekey(int **m, int r, int h, int l)
 {
+    // Saisie des valeurs par l'utilisateur
     for (int i = 0; i < r * h; i++)
     {
         for (int j = 0; j < r * l; j++)
@@ -82,10 +88,11 @@ void initmatricekey(int **m, int r, int h, int l)
         }
     }
 }
-// Initialisation par  fichier
 
+// Initialisation à partir d'un fichier
 image initmatricefile(char *filename)
 {
+    // Ouverture du fichier
     FILE *f = fopen(filename, "r");
     if (f == NULL)
     {
@@ -94,17 +101,17 @@ image initmatricefile(char *filename)
     }
 
     image g;
-
-    // Lire les dimensions r, l, h
+    // Lecture des dimensions r, l, h
     if (fscanf(f, "%d,%d,%d ", &g.r, &g.l, &g.h) != 3)
-    { // fscanf retoune le nombre des elements scanne
-        fprintf(stderr, "Erreur : format incorrect .\n");
+    {
+        fprintf(stderr, "Erreur : format incorrect.\n");
         fclose(f);
         exit(EXIT_FAILURE);
     }
 
     printf("Dimensions : resolution=%d, longueur=%d, hauteur=%d\n", g.r, g.l, g.h);
 
+    // Allocation et lecture des matrices RGB
     for (int i = 0; i < 3; i++)
     {
         g.img[i] = creationMatrice(g.r, g.h, g.l);
@@ -116,6 +123,7 @@ image initmatricefile(char *filename)
         }
     }
 
+    // Lecture des valeurs RGB
     for (int i = 0; i < g.h * g.r; i++)
     {
         for (int j = 0; j < g.l * g.r; j++)
@@ -132,10 +140,42 @@ image initmatricefile(char *filename)
     fclose(f);
     return g;
 }
+// enregistrer l image dans un fichier 
+void save_image_file(char *filename, image g)
+{
+    // Ouverture du fichier
+    FILE *f = fopen(filename, "w");
+    if (f == NULL)
+    {
+        perror("Erreur d'ouverture du fichier");
+        exit(EXIT_FAILURE);
+    }
 
-// Affichage de l image en console sous forme (x,x,x) (x,x,x) (x,x,x) (x,x,x)
+    // Écriture des dimensions
+    fprintf(f, "%d %d %d\n", g.r, g.l, g.h);
+
+    // Écriture des valeurs RGB des pixels
+    for (int i = 0; i < g.h * g.r; i++)
+    {
+        for (int j = 0; j < g.l * g.r; j++)
+        {
+            fprintf(f, "(%d.%d.%d) ", 
+                    g.img[0][i][j], // Rouge
+                    g.img[1][i][j], // Vert
+                    g.img[2][i][j]  // Bleu
+            );
+        }
+        fprintf(f, "\n");
+    }
+
+    fclose(f);
+}
+
+
+// Affichage de l'image en console
 void afficherimg(image m, int r, int h, int l)
 {
+    // Format d'affichage : (R.G.B)
     for (int i = 0; i < r * h; i++)
     {
         for (int j = 0; j < r * l; j++)
@@ -146,17 +186,10 @@ void afficherimg(image m, int r, int h, int l)
     }
 }
 
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// ***********************************      Q   U    3          *************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
-
-// Affichage d une matrice a 2 dimension
+// Affichage d'une matrice 2D de doubles
 void afficher2d(double **m, int l, int c)
 {
+    // Affiche chaque élément de la matrice
     for (int i = 0; i < l; i++)
     {
         for (int j = 0; j < c; j++)
@@ -167,14 +200,17 @@ void afficher2d(double **m, int l, int c)
     }
 }
 
-// Extraire une des composantes (rouge / vertes / blue ) de l image
+// Extraction d'une composante couleur
 grey_image extraire(image m, int c)
 {
+    // Initialisation de l'image en niveaux de gris
     grey_image g;
     g.img = creationMatrice(m.r, m.h, m.l);
     g.l = m.l;
     g.r = m.r;
     g.h = m.h;
+    
+    // Copie de la composante sélectionnée
     for (int i = 0; i < m.h * m.r; i++)
     {
         for (int j = 0; j < m.l * m.r; j++)
@@ -184,92 +220,43 @@ grey_image extraire(image m, int c)
     }
     return g;
 }
-// Fonction pour sauvegarder une image en niveaux de gris
 
-// Fonction pour sauvegarder une image en niveaux de gris
+// Sauvegarde d'une image en niveaux de gris au format PNG
 void saveGreyImageAsPNG(grey_image g, const char *filename)
 {
     int width = g.l * g.r;
     int height = g.h * g.r;
-    unsigned char *data = malloc(width * height); // Un seul canal pour le gris
+    // Allocation du buffer pour l'image
+    unsigned char *data = malloc(width * height);
 
+    // Conversion et limitation des valeurs entre 0 et 255
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            // Limiter les valeurs entre 0 et 255
             int pixelValue = g.img[i][j];
-            if (pixelValue > 255)
-                pixelValue = 255;
-            if (pixelValue < 0)
-                pixelValue = 0;
-
+            if (pixelValue > 255) pixelValue = 255;
+            if (pixelValue < 0) pixelValue = 0;
             data[i * width + j] = (unsigned char)pixelValue;
         }
     }
 
-    // Le '1' indique un seul canal (niveau de gris)
     stbi_write_png(filename, width, height, 1, data, width);
     free(data);
 }
 
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// ***********************************      Q   U    4          *************************************
-// **************************************************************************************************
-// **************************************************************************************************
-// **************************************************************************************************
-
-// Filtre de flous
-
-// int ** flou(int **m,int r, int h, int l){
-//     float somme=0.0;
-//     // intialisation de la matrice
-
-//     float kernel[3][3]={
-//         {1.0/16.0,1.0/16.0,1.0/16.0},
-//         {1.0/16.0,1.0/16.0,1.0/16.0},
-//         {1.0/16.0,1.0/16.0,1.0/16.0}
-//     };
-
-//     // nouvel matrice
-//     int ** output=creationMatrice(r,h,l);
-//     for (int i=1;i<r*h-1;i++){
-//         for (int j=1;j<r*l-1;j++){
-//             somme=0;
-//             for (int ki=0;ki<3;ki++){
-//                 for(int kj=0;kj<3;kj++){
-//                     somme+=kernel[ki][kj]*m[i+ki-1][j+kj-1];
-//                 }
-//             }
-//             output[i][j]=(int)round(somme);
-//         }
-//     }
-
-//     // remplire les cases vides
-//     for (int i=0;i<r*h;i++){
-//        output[i][0]=0; // premiere colone
-//        output[i][r*l-1]=0; // derniere colonne
-//     }
-//     for (int j=0;j<r*l;j++){
-//         output[0][j]=0; // premiere ligne
-//         output[r*h-1][j]=0; // derniere ligne
-//     }
-
-//    return output;
-
-// }
-
-// Filtre de detection par countours
+// Création du noyau gaussien pour le flou
 double **guasse_ker(float ecart, int *size_ker)
 {
+    // Calcul de la taille du noyau
     int size = 2 * (int)ceil(3 * ecart) + 1;
     *size_ker = size;
     double **ker = creationMatricedouble(1, size, size);
     int offset = size / 2;
     int x, y;
     double somme = 0.0;
+
+    // Calcul des coefficients gaussiens
     for (int i = 0; i < size; i++)
     {
         for (int j = 0; j < size; j++)
@@ -280,21 +267,22 @@ double **guasse_ker(float ecart, int *size_ker)
             somme += ker[i][j];
         }
     }
-    
-
     return ker;
 }
 
+// Application de la convolution (flou gaussien)
 image convolution(image img, double **k, int size_ker)
 {
+    // Initialisation de l'image résultat
     image result;
     result.h = img.h;
     result.l = img.l;
     result.r = img.r;
+    
+    // Allocation et initialisation des matrices
     for (int i = 0; i < 3; i++)
     {
         result.img[i] = creationMatrice(result.r, result.h, result.l);
-        // Initialiser à zéro
         for (int x = 0; x < result.h * result.r; x++)
         {
             for (int y = 0; y < result.l * result.r; y++)
@@ -303,8 +291,11 @@ image convolution(image img, double **k, int size_ker)
             }
         }
     }
+
     int l = img.l * img.r;
     int h = img.h * img.r;
+
+    // Application de la convolution
     for (int c = 0; c < 3; c++)
     {
         for (int i = size_ker / 2; i < h - size_ker / 2; i++)
@@ -321,7 +312,8 @@ image convolution(image img, double **k, int size_ker)
             }
         }
     }
-    // Gestion des bords
+
+    // Gestion des bords de l'image
     for (int c = 0; c < 3; c++)
     {
         // Bords horizontaux
@@ -329,7 +321,7 @@ image convolution(image img, double **k, int size_ker)
         {
             for (int j = 0; j < l; j++)
             {
-                result.img[c][i][j] = img.img[c][i][j]; // Copier l'original au lieu de mettre à 0
+                result.img[c][i][j] = img.img[c][i][j];
                 result.img[c][h - 1 - i][j] = img.img[c][h - 1 - i][j];
             }
         }
@@ -347,10 +339,12 @@ image convolution(image img, double **k, int size_ker)
     return result;
 }
 
+// Détection de contours avec l'opérateur de Sobel
 int **detection_de_contours(int **m, int r, int h, int l)
 {
     int somme_x = 0, somme_y = 0;
-    // Initialisation des kernels de Sobel
+    
+    // Définition des kernels de Sobel
     float sobel_x[3][3] = {
         {-1, 0, 1},
         {-2, 0, 2},
@@ -361,18 +355,18 @@ int **detection_de_contours(int **m, int r, int h, int l)
         {0, 0, 0},
         {1, 2, 1}};
 
-    // Nouvelle matrice de sortie
+    // Création de la matrice de sortie
     int **output = creationMatrice(r, h, l);
 
+    // Application des filtres de Sobel
     for (int i = 1; i < r * h - 1; i++)
-    { // Parcours des pixels (sans les bords)
+    {
         for (int j = 1; j < l * r - 1; j++)
         {
-
-            // Calcul des gradients pour Sobel X et Sobel Y
             somme_x = 0;
             somme_y = 0;
 
+            // Calcul des gradients
             for (int ki = 0; ki < 3; ki++)
             {
                 for (int kj = 0; kj < 3; kj++)
@@ -383,118 +377,71 @@ int **detection_de_contours(int **m, int r, int h, int l)
             }
 
             // Calcul de la magnitude du gradient
-            int magnitude = (int)round(sqrt(somme_x * somme_x + somme_y * somme_y));
-
-            // Stocker la magnitude dans la matrice de sortie
-            output[i][j] = magnitude;
+            output[i][j] = (int)round(sqrt(somme_x * somme_x + somme_y * somme_y));
         }
     }
 
-    // Remplir les bords de la matrice de sortie avec 0
+    // Initialisation des bords à 0
     for (int i = 0; i < r * h; i++)
     {
-        output[i][0] = 0;     // Première colonne
-        output[i][l - 1] = 0; // Dernière colonne
+        output[i][0] = 0;
+        output[i][l - 1] = 0;
     }
-
     for (int j = 0; j < l * r; j++)
     {
-        output[0][j] = 0;     // Première ligne
-        output[r - 1][j] = 0; // Dernière ligne
+        output[0][j] = 0;
+        output[r - 1][j] = 0;
     }
 
     return output;
 }
 
-// Creation de l image floue
-// image floue_image(image m){
-//     image nv;
-//     nv.h=m.h;
-//     nv.l=m.l;
-//     nv.r=m.r;
-//     for(int i=0;i<3;i++){
-//         nv.img[i]=flou(m.img[i],m.r,m.h,m.l);
-//     }
-//     return nv;
-// };
-// Creation de l image edge detect
-
+// Création de l'image après détection des contours
 grey_image detect_image(image m, int c)
 {
+    // Initialisation de la nouvelle image
     grey_image nv;
     nv.h = m.h;
     nv.l = m.l;
     nv.r = m.r;
 
+    // Application de la détection de contours
     nv.img = detection_de_contours(m.img[c], m.r, m.h, m.l);
 
     return nv;
-};
+}
 
-// Creation de l image
+// Sauvegarde d'une image couleur au format PNG
 void saveImageAsPNG(image img, const char *filename)
 {
     int width = img.l * img.r;
     int height = img.h * img.r;
-    unsigned char *data = malloc(3 * width * height); // RGB data
+    // Allocation du buffer pour l'image RGB
+    unsigned char *data = malloc(3 * width * height);
 
+    // Copie des données RGB
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
             int index = (i * width + j) * 3;
-            data[index] = img.img[0][i][j];     // Red channel
-            data[index + 1] = img.img[1][i][j]; // Green channel
-            data[index + 2] = img.img[2][i][j]; // Blue channel
+            data[index] = img.img[0][i][j];     // Canal rouge
+            data[index + 1] = img.img[1][i][j]; // Canal vert
+            data[index + 2] = img.img[2][i][j]; // Canal bleu
         }
     }
 
     stbi_write_png(filename, width, height, 3, data, width * 3);
     free(data);
 }
-//                    for troubleshooting
-// int main()
-// {
-//     // char filename[] = "matrice.txt";
-//     // image m2 = initmatricefile(filename);
-//     // int sizeker = 0;
-//     // float ecart;
-//     // image resultat_flou;
-//     // // printf("Enter l ecrat type :");
-//     // // scanf("%f",&ecart);
-//     // double **ker = guasse_ker(2, &sizeker);
-//     // printf("%d\n", sizeker);
-//     // afficher2d(ker, sizeker, sizeker);
 
-//     // printf("\n************** Image Loaded from File ****************\n");
-//     // //afficherimg(m2, m2.r, m2.h, m2.l);
-//     // grey_image grey = extraire(m2, 1);
-//     // grey_image edge = detect_image(m2,0);  // 0 pour rouge
-
-//     // saveGreyImageAsPNG(grey, "grey_component.png");
-//     // saveGreyImageAsPNG(edge, "edge_detect.png");
-//     // // Save the loaded image as a PNG
-//     // saveImageAsPNG(m2, "output.png");
-//     // printf("\nImage saved as output.png\n");
-
-//     // // Apply noise reduction
-//     // printf("\n************** Applying Noise Reduction ****************\n");
-//     // resultat_flou = convolution(m2, ker, sizeker);
-//     // //afficherimg(resultat_flou, resultat_flou.r, resultat_flou.h, resultat_flou.l);
-
-//     // // Save the noise-reduced image as a PNG
-//     // printf("Dimensions : resolution=%d, longueur=%d, hauteur=%d", resultat_flou.r, resultat_flou.l, resultat_flou.h);
-
-//     // saveImageAsPNG(resultat_flou, "output_floue_new.png");
-//     // printf("\nImage saved as output_floue_new.png\n");
-
-// }
 int main() {
     int choix, sous_choix;
     char nom_fichier[256] = "matrice.txt";
     
     // Variables pour l'image
     image img_originale;
+    image randimg;
     grey_image img_grise = {0};
     grey_image img_contours = {0};
     double **noyau_gaussien = NULL;
@@ -511,11 +458,15 @@ int main() {
         printf("2. Extraire composante(s) couleur\n");
         printf("3. Detection des contours\n");
         printf("4. Appliquer flou gaussien\n");
-        printf("5. Quitter\n");
+        printf("0. Quitter\n");
+        printf("\n=============== Partie independante de l image precedente ===============\n");
+        printf("6. Creation d image aleatoire\n");
+        printf("0. Quitter\n");
         printf("\nVotre choix : ");
         scanf("%d", &choix);
 
         switch (choix) {
+            
             case 1: {
                 char nom_sauvegarde[] = "image_originale.png";
                 printf("\nAffichage de l'image :\n");
@@ -632,8 +583,32 @@ int main() {
                 printf(">>> Image enregistree avec succes dans le fichier : %s\n", nom_sauvegarde);
                 break;
             }
+            case 6: {
+                int r,l,h;
+                char nom_sauvegarde[] = "image_aleatoire.png";
+                char nom_sauvegarde2[] = "image_aleatoire.txt";
+                printf("\nResolution :");
+                scanf("%d",&r);
+                printf("\nLongueure :");
+                scanf("%d",&l);
+                printf("\nHauteure :");
+                scanf("%d",&h);
+                randimg.r=r;
+                randimg.l=l;
+                randimg.h=h;
+                for (int i= 0 ; i< 3 ; i++ ){
+                    randimg.img[i]=creationMatrice(r,h,l);
+                    initmatricerand(randimg.img[i],r,h,l);
+                }
+                afficherimg(randimg, randimg.r, randimg.h, randimg.l);
+                save_image_file(nom_sauvegarde2,randimg);
+                saveImageAsPNG(randimg, nom_sauvegarde);
+                printf("\n>>> Image enregistree avec succes dans le fichier : %s %s\n", nom_sauvegarde,nom_sauvegarde2);
 
-            case 5: {
+                break;
+            }
+
+            case 0: {
                 printf("Programme termine.\n");
                 // Nettoyage de la mémoire
                 if (noyau_gaussien != NULL) {
